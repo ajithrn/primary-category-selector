@@ -189,21 +189,9 @@ class Primary_Category_Selector_Admin {
 		return array(
 			'title'   => $taxonomy->labels->singular_name,
 			'name'    => $taxonomy->name,
+			'label'   => $taxonomy->label,
 			'primary' => $primary_term,
-			'terms'   => array_map( array( $this, 'map_terms_for_js' ), get_terms( $taxonomy->name ) ),
-		);
-	}
-
-	/**
-	 * format terms available in a taxonomy
-	 *
-	 * @param [type] $term
-	 * @return array
-	 */
-	private function map_terms_for_js( $term ) {
-		return array(
-			'id'   => $term->term_id,
-			'name' => $term->name,
+			'gutenberg'   => use_block_editor_for_post( $post ),
 		);
 	}
 
