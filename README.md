@@ -2,12 +2,13 @@
 
 Contributors: ajithrn  
 Donate link: https://ajithrn.com  
-Tags: comments, spam  
+Tags: taxonomy, category, post  
 Requires at least: 3.0.1  
-Tested up to: 3.4  
+Tested up to: 5.2  
 Stable tag: 4.3  
 License: GPLv2 or later  
 License URI: http://www.gnu.org/licenses/gpl-2.0.html  
+Ref: [1](https://wordpress.org/plugins/easy-primary-category/) | [2](https://github.com/airesvsg/wp-primary-category)
 
 Plugin to select the primary category for post and custom post types.
 
@@ -41,5 +42,6 @@ e.g.
 ## TO DO
 - Improve Documentation
 - Improve Gutenberg Support
+- Front End Post List Block
 - Add Setting Page
 - REST API Support
