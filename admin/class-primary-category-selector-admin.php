@@ -52,6 +52,12 @@ class Primary_Category_Selector_Admin {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 
+		// register custom meta box to select categories
+		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
+
+		// save custom meta data
+		add_action( 'save_post', array( $this, 'save_primary_meta_content' ) );
+
 	}
 
 	/**
@@ -100,4 +106,133 @@ class Primary_Category_Selector_Admin {
 
 	}
 
+	/**
+	 * Exclude unwanted post type which are not needed the custom metabox
+	 *
+	 * @return void
+	 */
+	public static function get_not_included_post_types() {
+		return (array) apply_filters( 'primary_category_selector_not_included_post_types', array( 'attachment' => 'attachment', 'page' => 'page' ) );
+	}
+
+	/**
+	 * Get list of post types in the website
+	 *
+	 * @param array $args
+	 * @param string $output
+	 * @return array
+	 */
+	public static function get_post_types( $args = array(), $output = 'names' ) {
+		$args       = apply_filters( 'primary_category_selector_post_types_args', array_merge( array( 'show_ui' => true ), $args ) );
+		$post_types = array_diff_key( get_post_types( $args, $output ), self::get_not_included_post_types() );
+		return (array) apply_filters( 'primary_category_selector_post_types', $post_types );
+	}
+
+	/**
+	 * Exclude unwanted post type which are not needed the custom metabox
+	 *
+	 * @return array
+	 */
+	public static function get_not_included_taxonomies() {
+		return (array) apply_filters( 'primary_category_selector_not_included_taxonomies', array( 'post_tag' => 'post_tag', 'post_format' => 'post_format' ) );
+	}
+
+	/**
+	 * Get list taxonomies present in the website
+	 *
+	 * @param array $args
+	 * @param string $output
+	 * @return array
+	 */
+	public static function get_taxonomies( $args = array(), $output = 'objects' ) {
+		$args       = apply_filters( 'primary_category_selector_taxonomies_args', array_merge( array( 'hierarchical' => true, 'show_ui' => true ), $args ) );
+		$taxonomies = array_diff_key( get_taxonomies( $args, $output ), self::get_not_included_taxonomies() );
+		return (array) apply_filters( 'primary_category_selector_taxonomies', $taxonomies );
+	}
+
+	/**
+	 * Get data for meta select field
+	 *
+	 * @param [type] $post_id
+	 * @param array $callback_args
+	 * @return html
+	 */
+	public function get_meta_box_content( $post_id, $callback_args = array() ) {
+
+		global $post;
+		$meta_key = 'primary-'.$callback_args['args']['taxonomy'];
+		$primary_category = '';
+
+		// Retrieve data from primary_category meta field
+		$current_selected = get_post_meta( $post->ID, $meta_key, true );
+
+		// Set variable so that select element displays the set primary category on page load
+		if ( $current_selected != '' ) {
+			$primary_category = $current_selected;
+		}
+
+		// Get list of categories/taxonomies associated with post
+		$post_categories = wp_get_post_terms( $post->ID, $callback_args['args']['taxonomy'] );
+		$html = '<select name="'.$callback_args['id'].'" id="'.$callback_args['id'].'" class="pcs_select" style="width:95%">';
+
+		// Load each associated category into select element and display set primary category on page load
+		foreach( $post_categories as $post_category ) {
+			$html .= '<option value="' . $post_category->term_taxonomy_id . '" ' . selected( $primary_category, $post_category->term_taxonomy_id, false ) . '>' . $post_category->name . '</option>';
+		}
+		$html .= '</select>';
+		echo $html;
+	}
+
+
+	/**
+	 * Register custom meta boxes to select  primary categories/taxonomies
+	 *
+	 * @return void
+	 */
+	public function register_meta_boxes() {
+
+		$post_types = self::get_post_types();
+		$taxonomies = self::get_taxonomies();
+
+		foreach ( $taxonomies  as $taxonomy ) {
+			foreach ( (array) $post_types as $post_type ) {
+				if ( in_array( $post_type, $taxonomy->object_type, true ) ) {
+					$meta_box_id = 'primary-'.$taxonomy->name;
+					$meta_box_name = 'Primary '.$taxonomy->labels->singular_name;
+					$callback_args = array( 'taxonomy' => $taxonomy->name );
+
+					//add meta box
+					add_meta_box (
+						$meta_box_id,
+						$meta_box_name,
+						array( $this, 'get_meta_box_content' ),
+						$post_type,
+						'side',
+						'default',
+						$callback_args
+					);
+				}
+			}
+		}
+
+	}
+
+	/**
+	 * Save Selected primary category data
+	 *
+	 * @return void	 *
+	 */
+	public static function save_primary_meta_content( ) {
+		global $post;
+		$taxonomies = self::get_taxonomies();
+
+		foreach ($taxonomies  as $taxonomy) {
+			$meta_key = 'primary-'.$taxonomy->name;
+
+			if (isset($_POST[ $meta_key ])) {
+				$primary_category = sanitize_text_field($_POST[ $meta_key ]);
+				update_post_meta($post->ID, $meta_key, $primary_category);
+			}
+		}
+	}
 }
