@@ -104,6 +104,9 @@ class Primary_Category_Selector_Admin {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/primary-category-selector-admin.js', array( 'jquery' ), $this->version, false );
 
+		// Formatting categories/taxonomies for JS.
+		$data	= self::get_post_taxonomies();
+		wp_localize_script( $this->plugin_name, 'primaryCategorySelector', $data );
 	}
 
 	/**
@@ -148,6 +151,60 @@ class Primary_Category_Selector_Admin {
 		$args       = apply_filters( 'primary_category_selector_taxonomies_args', array_merge( array( 'hierarchical' => true, 'show_ui' => true ), $args ) );
 		$taxonomies = array_diff_key( get_taxonomies( $args, $output ), self::get_not_included_taxonomies() );
 		return (array) apply_filters( 'primary_category_selector_taxonomies', $taxonomies );
+	}
+
+	/**
+	 * Get Taxonomies enabled for current post/
+	 *
+	 * @param array $args
+	 * @param string $output
+	 * @return void
+	 */
+	private function get_post_taxonomies( $args = array(), $output = 'objects' ) {
+		global $post;
+		$taxonomies = array_diff_key( get_object_taxonomies( $post, 'objects' ), self::get_not_included_taxonomies() );
+		// format taxonomies that can be used for js.
+		$taxonomies = array_map( array( $this, 'map_taxonomies_for_js' ), $taxonomies );
+		return array( 'taxonomies' => $taxonomies, );
+	}
+
+	/**
+	 * format taxonomy data for the js.
+	 *
+	 * @param [type] $taxonomy
+	 * @return array
+	 */
+	private function map_taxonomies_for_js( $taxonomy ) {
+
+		global $post;
+
+		//get current primary term from meta
+		$meta_key = 'primary-'.$taxonomy->name;
+		$primary_term = get_post_meta( $post->ID, $meta_key, true );
+
+		if ( empty( $primary_term ) ) {
+			$primary_term = '';
+		}
+
+		return array(
+			'title'   => $taxonomy->labels->singular_name,
+			'name'    => $taxonomy->name,
+			'primary' => $primary_term,
+			'terms'   => array_map( array( $this, 'map_terms_for_js' ), get_terms( $taxonomy->name ) ),
+		);
+	}
+
+	/**
+	 * format terms available in a taxonomy
+	 *
+	 * @param [type] $term
+	 * @return array
+	 */
+	private function map_terms_for_js( $term ) {
+		return array(
+			'id'   => $term->term_id,
+			'name' => $term->name,
+		);
 	}
 
 	/**
