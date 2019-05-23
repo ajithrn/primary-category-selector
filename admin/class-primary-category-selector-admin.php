@@ -1,5 +1,4 @@
 <?php
-
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -44,18 +43,18 @@ class Primary_Category_Selector_Admin {
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of this plugin.
-	 * @param      string    $version    The version of this plugin.
+	 * @param    string $plugin_name       The name of this plugin.
+	 * @param    string $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
 
 		$this->plugin_name = $plugin_name;
-		$this->version = $version;
+		$this->version     = $version;
 
-		// register custom meta box to select categories
+		// register custom meta box to select categories.
 		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
 
-		// save custom meta data
+		// save custom meta data.
 		add_action( 'save_post', array( $this, 'save_primary_meta_content' ) );
 
 	}
@@ -105,24 +104,30 @@ class Primary_Category_Selector_Admin {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/primary-category-selector-admin.js', array( 'jquery' ), $this->version, false );
 
 		// Formatting categories/taxonomies for JS.
-		$data	= self::get_post_taxonomies();
+		$data = self::get_post_taxonomies();
 		wp_localize_script( $this->plugin_name, 'primaryCategorySelector', $data );
 	}
 
 	/**
-	 * Exclude unwanted post type which are not needed the custom metabox
+	 * Exclude unwanted post type which are not needed the custom metabox.
 	 *
-	 * @return void
+	 * @return array
 	 */
 	public static function get_not_included_post_types() {
-		return (array) apply_filters( 'primary_category_selector_not_included_post_types', array( 'attachment' => 'attachment', 'page' => 'page' ) );
+		return (array) apply_filters(
+			'primary_category_selector_not_included_post_types',
+			array(
+				'attachment' => 'attachment',
+				'page'       => 'page',
+			)
+		);
 	}
 
 	/**
 	 * Get list of post types in the website
 	 *
-	 * @param array $args
-	 * @param string $output
+	 * @param array  $args arguments.
+	 * @param string $output  output format.
 	 * @return array
 	 */
 	public static function get_post_types( $args = array(), $output = 'names' ) {
@@ -137,18 +142,33 @@ class Primary_Category_Selector_Admin {
 	 * @return array
 	 */
 	public static function get_not_included_taxonomies() {
-		return (array) apply_filters( 'primary_category_selector_not_included_taxonomies', array( 'post_tag' => 'post_tag', 'post_format' => 'post_format' ) );
+		return (array) apply_filters(
+			'primary_category_selector_not_included_taxonomies',
+			array(
+				'post_tag'    => 'post_tag',
+				'post_format' => 'post_format',
+			)
+		);
 	}
 
 	/**
 	 * Get list taxonomies present in the website
 	 *
-	 * @param array $args
-	 * @param string $output
+	 * @param array  $args arguments.
+	 * @param string $output  output format.
 	 * @return array
 	 */
 	public static function get_taxonomies( $args = array(), $output = 'objects' ) {
-		$args       = apply_filters( 'primary_category_selector_taxonomies_args', array_merge( array( 'hierarchical' => true, 'show_ui' => true ), $args ) );
+		$args = apply_filters(
+			'primary_category_selector_taxonomies_args',
+			array_merge(
+				array(
+					'hierarchical' => true,
+					'show_ui'      => true,
+				),
+				$args
+			)
+		);
 		$taxonomies = array_diff_key( get_taxonomies( $args, $output ), self::get_not_included_taxonomies() );
 		return (array) apply_filters( 'primary_category_selector_taxonomies', $taxonomies );
 	}
@@ -156,30 +176,36 @@ class Primary_Category_Selector_Admin {
 	/**
 	 * Get Taxonomies enabled for current post/
 	 *
-	 * @param array $args
-	 * @param string $output
-	 * @return void
+	 * @param array  $args arguments.
+	 * @param string $output output format.
+	 * @return array
 	 */
 	private function get_post_taxonomies( $args = array(), $output = 'objects' ) {
 		global $post;
-		$taxonomies = array_diff_key( get_object_taxonomies( $post, 'objects' ), self::get_not_included_taxonomies() );
+		$taxonomies = array_diff_key(
+			get_object_taxonomies(
+				$post,
+				'objects',
+			),
+			self::get_not_included_taxonomies(),
+		);
 		// format taxonomies that can be used for js.
 		$taxonomies = array_map( array( $this, 'map_taxonomies_for_js' ), $taxonomies );
-		return array( 'taxonomies' => $taxonomies, );
+		return array( 'taxonomies' => $taxonomies );
 	}
 
 	/**
-	 * format taxonomy data for the js.
+	 * Format taxonomy data for the js
 	 *
-	 * @param [type] $taxonomy
+	 * @param array [type] $taxonomy data.
 	 * @return array
 	 */
 	private function map_taxonomies_for_js( $taxonomy ) {
 
 		global $post;
 
-		//get current primary term from meta
-		$meta_key = 'primary-'.$taxonomy->name;
+		// get current primary term from meta.
+		$meta_key     = 'primary-' . $taxonomy->name;
 		$primary_term = get_post_meta( $post->ID, $meta_key, true );
 
 		if ( empty( $primary_term ) ) {
@@ -187,45 +213,44 @@ class Primary_Category_Selector_Admin {
 		}
 
 		return array(
-			'title'   => $taxonomy->labels->singular_name,
-			'name'    => $taxonomy->name,
-			'label'   => $taxonomy->label,
-			'primary' => $primary_term,
-			'gutenberg'   => use_block_editor_for_post( $post ),
+			'title'     => $taxonomy->labels->singular_name,
+			'name'      => $taxonomy->name,
+			'label'     => $taxonomy->label,
+			'primary'   => $primary_term,
+			'gutenberg' => use_block_editor_for_post( $post ),
 		);
 	}
 
 	/**
 	 * Get data for meta select field
 	 *
-	 * @param [type] $post_id
-	 * @param array $callback_args
-	 * @return html
+	 * @param [type] $post_id post id.
+	 * @param array  $callback_args callback args.
+	 * @return void
 	 */
 	public function get_meta_box_content( $post_id, $callback_args = array() ) {
 
 		global $post;
-		$meta_key = 'primary-'.$callback_args['args']['taxonomy'];
+		$meta_key         = 'primary-' . $callback_args['args']['taxonomy'];
 		$primary_category = '';
 
-		// Retrieve data from primary_category meta field
+		// Retrieve data from primary_category meta field.
 		$current_selected = get_post_meta( $post->ID, $meta_key, true );
 
-		// Set variable so that select element displays the set primary category on page load
-		if ( $current_selected != '' ) {
+		// Set variable so that select element displays the set primary category on page load.
+		if ( isset( $current_selected ) && ( '' !== $current_selected ) ) {
 			$primary_category = $current_selected;
 		}
 
-		// Get list of categories/taxonomies associated with post
+		// Get list of categories/taxonomies associated with post.
 		$post_categories = wp_get_post_terms( $post->ID, $callback_args['args']['taxonomy'] );
-		$html = '<select name="'.$callback_args['id'].'" id="'.$callback_args['id'].'" class="pcs_select" style="width:95%">';
+		echo '<select name="' . esc_html( $callback_args['id'] ) . '" id="' . esc_html( $callback_args['id'] ) . '" class="pcs_select" style="width:95%">';
 
-		// Load each associated category into select element and display set primary category on page load
-		foreach( $post_categories as $post_category ) {
-			$html .= '<option value="' . $post_category->term_taxonomy_id . '" ' . selected( $primary_category, $post_category->term_taxonomy_id, false ) . '>' . $post_category->name . '</option>';
+		// Load each associated category into select element and display set primary category on page load.
+		foreach ( $post_categories as $post_category ) {
+			echo '<option value="' . esc_html( $post_category->term_taxonomy_id ) . '" ' . selected( $primary_category, $post_category->term_taxonomy_id, false ) . '>' . esc_html( $post_category->name ) . '</option>';
 		}
-		$html .= '</select>';
-		echo $html;
+		echo '</select>';
 	}
 
 
@@ -242,12 +267,12 @@ class Primary_Category_Selector_Admin {
 		foreach ( $taxonomies  as $taxonomy ) {
 			foreach ( (array) $post_types as $post_type ) {
 				if ( in_array( $post_type, $taxonomy->object_type, true ) ) {
-					$meta_box_id = 'primary-'.$taxonomy->name;
-					$meta_box_name = 'Primary '.$taxonomy->labels->singular_name;
+					$meta_box_id   = 'primary-' . $taxonomy->name;
+					$meta_box_name = 'Primary ' . $taxonomy->labels->singular_name;
 					$callback_args = array( 'taxonomy' => $taxonomy->name );
 
-					//add meta box
-					add_meta_box (
+					// add meta box.
+					add_meta_box(
 						$meta_box_id,
 						$meta_box_name,
 						array( $this, 'get_meta_box_content' ),
@@ -265,18 +290,18 @@ class Primary_Category_Selector_Admin {
 	/**
 	 * Save Selected primary category data
 	 *
-	 * @return void	 *
+	 * @return void *
 	 */
-	public static function save_primary_meta_content( ) {
+	public static function save_primary_meta_content() {
 		global $post;
 		$taxonomies = self::get_taxonomies();
 
-		foreach ($taxonomies  as $taxonomy) {
-			$meta_key = 'primary-'.$taxonomy->name;
-
-			if (isset($_POST[ $meta_key ])) {
-				$primary_category = sanitize_text_field($_POST[ $meta_key ]);
-				update_post_meta($post->ID, $meta_key, $primary_category);
+		foreach ( $taxonomies  as $taxonomy ) {
+			$meta_key = 'primary-' . $taxonomy->name;
+			wp_verify_nonce( $meta_key );
+			if ( isset( $_POST[ $meta_key ] ) ) {
+				$primary_category = sanitize_text_field( wp_unslash( $_POST[ $meta_key ] ) );
+				update_post_meta( $post->ID, $meta_key, $primary_category );
 			}
 		}
 	}
